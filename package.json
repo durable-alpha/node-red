@@ -17,6 +17,14 @@
     "build-dev": "grunt build-dev",
     "docs": "grunt docs"
   },
+  "_moduleAliases": {
+    "@node-red/editor-client": "packages/nm/@node-red/editor-client",
+    "@node-red/editor-api": "packages/nm/@node-red/editor-api",
+    "@node-red/nodes": "packages/nm/@node-red/nodes",
+    "@node-red/runtime": "packages/nm/@node-red/runtime",
+    "@node-red/util": "packages/nm/@node-red/util",
+    "@node-red/registry": "packages/nm/@node-red/registry"
+  },
   "dependencies": {
     "acorn": "8.14.1",
     "acorn-walk": "8.3.4",
@@ -51,6 +59,7 @@
     "media-typer": "1.1.0",
     "memorystore": "1.6.7",
     "mime": "3.0.0",
+    "module-alias": "^2.2.3",
     "moment": "2.30.1",
     "moment-timezone": "0.5.48",
     "multer": "1.4.5-lts.2",

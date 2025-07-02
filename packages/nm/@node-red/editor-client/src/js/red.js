@@ -841,9 +841,6 @@ var RED = (function() {
         RED.nodes.init();
         RED.runtime.init()
 
-        if (RED.settings.theme("multiplayer.enabled",false)) {
-            RED.multiplayer.init()
-        }
         RED.comms.connect();
 
         $("#red-ui-main-container").show();
