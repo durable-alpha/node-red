@@ -19,11 +19,11 @@ node_modules
 public
 locales/zz-ZZ
 nodes/core/locales/zz-ZZ
-!packages/node_modules
-packages/node_modules/@node-red/editor-client/public
+!packages/nm
+packages/nm/@node-red/editor-client/public
 !test/**/node_modules
 docs
-!packages/node_modules/**/docs
+!packages/nm/**/docs
 .vscode
 .nyc_output
 sync.ffs_db
