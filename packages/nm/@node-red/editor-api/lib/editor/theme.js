@@ -244,10 +244,6 @@ module.exports = {
       themeSettings.theme = theme.theme;
     }
 
-    if (theme.hasOwnProperty("tours")) {
-      themeSettings.tours = theme.tours;
-    }
-
     return themeApp;
   },
   context: async function () {
