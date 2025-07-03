@@ -22,6 +22,8 @@ var sinon = require('sinon');
 
 var NR_TEST_UTILS = require("nr-test-utils");
 
+const flowsUrl = "/flows";
+
 var flows = NR_TEST_UTILS.require("@node-red/editor-api/lib/admin/flows");
 
 describe("api/admin/flows", function() {
@@ -31,10 +33,10 @@ describe("api/admin/flows", function() {
     before(function() {
         app = express();
         app.use(bodyParser.json());
-        app.get("/flows",flows.get);
-        app.get("/flows/state",flows.getState);
-        app.post("/flows",flows.post);
-        app.post("/flows/state",flows.postState);
+        app.get(flowsUrl, flows.get);
+        app.get(flowsUrl + "/state", flows.getState);
+        app.post(flowsUrl, flows.post);
+        app.post(flowsUrl + "/state", flows.postState);
     });
 
     it('returns flow - v1', function(done) {
@@ -44,7 +46,7 @@ describe("api/admin/flows", function() {
             }
         });
         request(app)
-            .get('/flows')
+            .get(flowsUrl)
             .set('Accept', 'application/json')
             .expect(200)
             .end(function(err,res) {
@@ -66,7 +68,7 @@ describe("api/admin/flows", function() {
             }
         });
         request(app)
-            .get('/flows')
+            .get(flowsUrl)
             .set('Accept', 'application/json')
             .set('Node-RED-API-Version','v2')
             .expect(200)
@@ -86,7 +88,7 @@ describe("api/admin/flows", function() {
     });
     it('returns flow - bad version', function(done) {
         request(app)
-            .get('/flows')
+            .get(flowsUrl)
             .set('Accept', 'application/json')
             .set('Node-RED-API-Version','xxx')
             .expect(400)
@@ -110,7 +112,7 @@ describe("api/admin/flows", function() {
             }
         });
         request(app)
-            .post('/flows')
+            .post(flowsUrl)
             .set('Accept', 'application/json')
             .expect(204)
             .end(function(err,res) {
@@ -130,7 +132,7 @@ describe("api/admin/flows", function() {
             }
         });
         request(app)
-            .post('/flows')
+            .post(flowsUrl)
             .set('Accept', 'application/json')
             .set('Node-RED-Deployment-Type','nodes')
             .expect(204)
@@ -158,7 +160,7 @@ describe("api/admin/flows", function() {
             }
         });
         request(app)
-            .post('/flows')
+            .post(flowsUrl)
             .set('Accept', 'application/json')
             .set('Node-RED-API-Version','v2')
             .send({rev:456,flows:[4,5,6]})
@@ -173,7 +175,7 @@ describe("api/admin/flows", function() {
     });
     it('sets flow - bad version', function(done) {
         request(app)
-            .post('/flows')
+            .post(flowsUrl)
             .set('Accept', 'application/json')
             .set('Node-RED-API-Version','xxx')
             .expect(400)
@@ -197,7 +199,7 @@ describe("api/admin/flows", function() {
             }
         });
         request(app)
-            .post('/flows')
+            .post(flowsUrl)
             .set('Accept', 'application/json')
             .set('Node-RED-Deployment-Type','reload')
             .expect(204)
@@ -221,7 +223,7 @@ describe("api/admin/flows", function() {
             }
         });
         request(app)
-            .get('/flows/state')
+            .get(flowsUrl + '/state')
             .set('Accept', 'application/json')
             .set('Node-RED-Deployment-Type', 'reload')
             .expect(200)
@@ -252,7 +254,7 @@ describe("api/admin/flows", function() {
             }
         });
         request(app)
-            .post('/flows/state')
+            .post(flowsUrl + '/state')
             .set('Accept', 'application/json')
             .send({state:'stop'})
             .expect(200)
@@ -293,7 +295,7 @@ describe("api/admin/flows", function() {
             }
         });
         request(app)
-            .post('/flows/state')
+            .post(flowsUrl + '/state')
             .set('Accept', 'application/json')
             .send({state:'bad-state'})
             .expect(400)

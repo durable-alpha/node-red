@@ -109,8 +109,10 @@ describe("api/admin/index", function() {
             permissionChecks = {};
         });
 
+        const flowsUrl = "/flows";
+
         it('GET /flows', function(done) {
-            request(app).get("/flows").expect(200).end(function(err,res) {
+            request(app).get(flowsUrl).expect(200).end(function(err,res) {
                 if (err) {
                     return done(err);
                 }
@@ -120,7 +122,7 @@ describe("api/admin/index", function() {
         });
 
         it('POST /flows', function(done) {
-            request(app).post("/flows").expect(200).end(function(err,res) {
+            request(app).post(flowsUrl).expect(200).end(function(err,res) {
                 if (err) {
                     return done(err);
                 }
