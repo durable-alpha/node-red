@@ -34,6 +34,9 @@ $(function() {
         // Get the welcome message element and hide it when conversation starts
         const welcomeMessage = chatWidget.querySelector('div[style*="font-weight:600"]');
         let conversationStarted = false;
+        let currentResponseTimeout = null; // Track the current response timeout
+        let isTyping = false; // Track if bot is currently typing
+        let currentTypeInterval = null; // Track the current typing interval
         
         function hideWelcomeMessage() {
             if (welcomeMessage && !conversationStarted) {
@@ -68,24 +71,101 @@ $(function() {
                     display: inline-block;
                     max-width: 70%;
                     word-wrap: break-word;
+                    word-break: break-word;
                 `;
                 div.innerHTML = text;
+                wrapper.appendChild(div);
+                chatMessages.appendChild(wrapper);
             } else {
-                // AI message as plain text
+                // AI message with typing effect
                 div.style.cssText = `
                     color: #333;
                     max-width: 70%;
                     word-wrap: break-word;
+                    word-break: break-word;
+                    min-height: 1.2em;
                 `;
-                div.innerHTML = `${text}`;
+                div.innerHTML = ''; // Start empty for typing effect
+                wrapper.appendChild(div);
+                chatMessages.appendChild(wrapper);
+                
+                // Start typing effect
+                typeMessage(div, text);
             }
             
-            wrapper.appendChild(div);
-            chatMessages.appendChild(wrapper);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
+            // Ensure smooth scrolling to bottom
+            setTimeout(() => {
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }, 10);
+        }
+        
+        function typeMessage(element, text, speed = 30) {
+            isTyping = true; // Set typing state to true
+            
+            // Change send button to pause icon during typing
+            const sendIcon = chatSend.querySelector('svg');
+            sendIcon.innerHTML = `
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="10,8 16,12 10,16"></polyline>
+            `;
+            sendIcon.style.cursor = 'pointer'; // Keep it clickable for pausing
+            sendIcon.style.opacity = '1';
+            chatSend.style.pointerEvents = 'auto'; // Keep it clickable
+            
+            let index = 0;
+            currentTypeInterval = setInterval(() => {
+                if (index < text.length) {
+                    element.innerHTML += text[index];
+                    index++;
+                    
+                    // Auto-scroll to keep the typing visible
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                } else {
+                    clearInterval(currentTypeInterval);
+                    currentTypeInterval = null;
+                    isTyping = false; // Set typing state to false when done
+                    
+                    // Re-enable send button after typing is complete
+                    sendIcon.innerHTML = `
+                        <line x1="22" y1="2" x2="11" y2="13"></line>
+                        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                    `;
+                    sendIcon.style.cursor = 'pointer';
+                    sendIcon.style.opacity = '1';
+                    chatSend.style.pointerEvents = 'auto';
+                }
+            }, speed);
+        }
+        
+        function pauseTyping() {
+            if (currentTypeInterval) {
+                clearInterval(currentTypeInterval);
+                currentTypeInterval = null;
+                isTyping = false;
+                
+                // Change pause icon to send icon
+                const sendIcon = chatSend.querySelector('svg');
+                sendIcon.innerHTML = `
+                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                `;
+                sendIcon.style.cursor = 'pointer';
+                sendIcon.style.opacity = '1';
+                chatSend.style.pointerEvents = 'auto';
+            }
         }
         
         function showLoadingEffect() {
+            // Change send button to pause icon (but keep input enabled for typing)
+            const sendIcon = chatSend.querySelector('svg');
+            sendIcon.innerHTML = `
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="10,8 16,12 10,16"></polyline>
+            `;
+            sendIcon.style.cursor = 'pointer'; // Keep it clickable for stopping
+            sendIcon.style.opacity = '1';
+            chatSend.style.pointerEvents = 'auto'; // Keep it clickable
+            
             // Create wrapper for flex alignment (same as appendMessage)
             const wrapper = document.createElement('div');
             wrapper.style.display = 'flex';
@@ -122,32 +202,69 @@ $(function() {
             loadingDiv.appendChild(dots);
             wrapper.appendChild(loadingDiv);
             chatMessages.appendChild(wrapper);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
             
-            // Add CSS animation if not already present
-            if (!document.getElementById('chat-loading-styles')) {
-                const style = document.createElement('style');
-                style.id = 'chat-loading-styles';
-                style.textContent = `
-                    @keyframes loadingDot {
-                        0%, 80%, 100% { opacity: 0.3; }
-                        40% { opacity: 1; }
-                    }
-                `;
-                document.head.appendChild(style);
-            }
+            // Ensure smooth scrolling to bottom
+            setTimeout(() => {
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }, 10);
         }
         
         function hideLoadingEffect() {
+            // Clear the timeout if it exists
+            if (currentResponseTimeout) {
+                clearTimeout(currentResponseTimeout);
+                currentResponseTimeout = null;
+            }
+            
+            // Restore send button to original icon
+            const sendIcon = chatSend.querySelector('svg');
+            sendIcon.innerHTML = `
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            `;
+            sendIcon.style.cursor = 'pointer';
+            sendIcon.style.opacity = '1';
+            chatSend.style.pointerEvents = 'auto';
+            
             const loadingIndicator = document.getElementById('chat-loading-indicator');
             if (loadingIndicator) {
                 loadingIndicator.remove();
             }
         }
         
+        function stopResponse() {
+            // Clear the timeout to stop the response
+            if (currentResponseTimeout) {
+                clearTimeout(currentResponseTimeout);
+                currentResponseTimeout = null;
+            }
+            
+            // Pause typing if it's currently happening
+            if (isTyping) {
+                pauseTyping();
+            }
+            
+            // Hide loading effect and restore send button
+            hideLoadingEffect();
+            
+            // Add a "Response stopped" message with typing effect
+            appendMessage("Response stopped by user.", false);
+        }
+        
         function openChat() {
             chatWidget.style.display = 'flex';
             chatInput.focus();
+            
+            // Ensure proper sizing on open
+            setTimeout(() => {
+                const widgetHeight = chatWidget.offsetHeight;
+                const windowHeight = window.innerHeight;
+                const maxHeight = Math.min(80 * windowHeight / 100, 600);
+                
+                if (widgetHeight > maxHeight) {
+                    chatWidget.style.maxHeight = maxHeight + 'px';
+                }
+            }, 100);
         }
         
         function closeChat() {
@@ -157,6 +274,23 @@ $(function() {
         
         chatSend.onclick = function(e) {
             e && e.preventDefault && e.preventDefault();
+            
+            // Check if we're in typing state (pause icon visible during typing)
+            const sendIcon = chatSend.querySelector('svg');
+            const isPauseIcon = sendIcon.innerHTML.includes('polyline');
+            
+            if (isPauseIcon) {
+                // We're in either loading state or typing state
+                if (isTyping) {
+                    // We're typing, pause the typing
+                    pauseTyping();
+                } else {
+                    // We're in loading state, stop the response
+                    stopResponse();
+                }
+                return;
+            }
+            
             const text = chatInput.value.trim();
             if (text) {
                 appendMessage(text, true);
@@ -168,9 +302,19 @@ $(function() {
                 
                 // Simulate AI thinking time (2-4 seconds)
                 const thinkingTime = 2000 + Math.random() * 2000;
-                setTimeout(() => {
+                currentResponseTimeout = setTimeout(() => {
                     hideLoadingEffect();
-                    appendMessage(text, false); // AI message on the left
+                    
+                    // Generate a more realistic response based on user input
+                    const responses = [
+                        `I understand you're asking about "${text}". Let me help you with that. This is a simulated response that demonstrates the typing effect. The bot appears to be thinking and then types out its response character by character, making the interaction feel more natural and engaging.`,
+                        `Great question! "${text}" is an interesting topic. Here's what I can tell you about it: The typing effect creates a more human-like conversation experience. Each character appears individually, simulating how a real person might type their response.`,
+                        `Regarding "${text}", here's my analysis: The typing effect adds personality to the bot responses. It makes the conversation feel more dynamic and less robotic. Users can see the response being constructed in real-time.`,
+                        `I see you mentioned "${text}". Let me break this down for you: The character-by-character typing creates anticipation and keeps users engaged. It's much more interesting than having the full response appear instantly.`
+                    ];
+                    
+                    const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+                    appendMessage(randomResponse, false);
                 }, thinkingTime);
             }
         };
@@ -178,7 +322,14 @@ $(function() {
         chatInput.addEventListener('keydown', function(e) {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
-                chatSend.onclick();
+                
+                // Check if we're in typing state
+                const sendIcon = chatSend.querySelector('svg');
+                const isPauseIcon = sendIcon.innerHTML.includes('polyline');
+                
+                if (!isPauseIcon) {
+                    chatSend.onclick();
+                }
             }
         });
         // Auto-resize textarea
