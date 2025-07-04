@@ -50,6 +50,9 @@
     </button>
   </div>
 </div>
+<div id="red-ui-chat-icon" style="display:none;position:fixed;bottom:20px;right:20px;width:60px;height:60px;background:#007acc;border-radius:50%;box-shadow:0 4px 16px rgba(0,0,0,0.15);cursor:pointer;z-index:9998;align-items:center;justify-content:center;border:2px solid #fff;">
+  <img src='https://github.githubassets.com/images/icons/emoji/unicode/2728.png' style='width:2em;height:2em;filter:brightness(0) invert(1);'/>
+</div>
 <script src="vendor/vendor.js?v={{ cacheBuster }}"></script>
 {{#asset.vendorMonaco}}
 <script src="{{{ asset.vendorMonaco }}}?v={{ cacheBuster }}"></script>

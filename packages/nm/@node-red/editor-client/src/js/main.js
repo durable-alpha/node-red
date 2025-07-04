@@ -24,7 +24,9 @@ $(function() {
 
     // --- Chat Widget Logic Injection ---
     const chatWidget = document.getElementById('red-ui-chat-widget');
-    if (chatWidget) {
+    const chatIcon = document.getElementById('red-ui-chat-icon');
+    
+    if (chatWidget && chatIcon) {
         const chatMessages = document.getElementById('red-ui-chat-messages');
         const chatInput = document.getElementById('red-ui-chat-input');
         const chatSend = document.getElementById('red-ui-chat-send');
@@ -37,6 +39,12 @@ $(function() {
         let currentResponseTimeout = null; // Track the current response timeout
         let isTyping = false; // Track if bot is currently typing
         let currentTypeInterval = null; // Track the current typing interval
+        
+        // Chat icon drag variables
+        let isIconDragging = false;
+        let iconDragOffsetX = 0;
+        let iconDragOffsetY = 0;
+        let iconWasDragged = false; 
         
         function hideWelcomeMessage() {
             if (welcomeMessage && !conversationStarted) {
@@ -216,7 +224,6 @@ $(function() {
                 currentResponseTimeout = null;
             }
             
-            // Restore send button to original icon
             const sendIcon = chatSend.querySelector('svg');
             sendIcon.innerHTML = `
                 <line x1="22" y1="2" x2="11" y2="13"></line>
@@ -233,29 +240,25 @@ $(function() {
         }
         
         function stopResponse() {
-            // Clear the timeout to stop the response
             if (currentResponseTimeout) {
                 clearTimeout(currentResponseTimeout);
                 currentResponseTimeout = null;
             }
             
-            // Pause typing if it's currently happening
             if (isTyping) {
                 pauseTyping();
             }
             
-            // Hide loading effect and restore send button
             hideLoadingEffect();
             
-            // Add a "Response stopped" message with typing effect
             appendMessage("Response stopped by user.", false);
         }
         
         function openChat() {
             chatWidget.style.display = 'flex';
+            chatIcon.style.display = 'none'; 
             chatInput.focus();
             
-            // Ensure proper sizing on open
             setTimeout(() => {
                 const widgetHeight = chatWidget.offsetHeight;
                 const windowHeight = window.innerHeight;
@@ -269,23 +272,68 @@ $(function() {
         
         function closeChat() {
             chatWidget.style.display = 'none';
+            chatIcon.style.display = 'flex'; 
         }
         
+        chatIcon.onclick = function() {
+            if (!iconWasDragged) {
+                openChat();
+            }
+            iconWasDragged = false;
+        };
+        
+        chatIcon.addEventListener('mousedown', function(e) {
+            e.preventDefault();
+            isIconDragging = true;
+            iconWasDragged = false; 
+            const rect = chatIcon.getBoundingClientRect();
+            iconDragOffsetX = e.clientX - rect.left;
+            iconDragOffsetY = e.clientY - rect.top;
+            document.body.style.userSelect = 'none';
+            
+            chatIcon.style.transition = 'none';
+        });
+        
+        document.addEventListener('mousemove', function(e) {
+            if (isIconDragging) {
+                iconWasDragged = true;
+                
+                let newLeft = e.clientX - iconDragOffsetX;
+                let newTop = e.clientY - iconDragOffsetY;
+                
+                const minLeft = 0;
+                const minTop = 0;
+                const maxLeft = window.innerWidth - chatIcon.offsetWidth;
+                const maxTop = window.innerHeight - chatIcon.offsetHeight;
+                
+                newLeft = Math.max(minLeft, Math.min(newLeft, maxLeft));
+                newTop = Math.max(minTop, Math.min(newTop, maxTop));
+                
+                chatIcon.style.left = newLeft + 'px';
+                chatIcon.style.top = newTop + 'px';
+                chatIcon.style.right = 'auto';
+                chatIcon.style.bottom = 'auto';
+                chatIcon.style.transform = 'none';
+            }
+        });
+        
+        document.addEventListener('mouseup', function() {
+            if (isIconDragging) {
+                isIconDragging = false;
+                document.body.style.userSelect = '';
+            }
+        });
         
         chatSend.onclick = function(e) {
             e && e.preventDefault && e.preventDefault();
             
-            // Check if we're in typing state (pause icon visible during typing)
             const sendIcon = chatSend.querySelector('svg');
             const isPauseIcon = sendIcon.innerHTML.includes('polyline');
             
             if (isPauseIcon) {
-                // We're in either loading state or typing state
                 if (isTyping) {
-                    // We're typing, pause the typing
                     pauseTyping();
                 } else {
-                    // We're in loading state, stop the response
                     stopResponse();
                 }
                 return;
@@ -295,17 +343,14 @@ $(function() {
             if (text) {
                 appendMessage(text, true);
                 chatInput.value = '';
-                chatInput.style.height = '48px'; // reset height
+                chatInput.style.height = '48px'; 
                 
-                // Show loading effect
                 showLoadingEffect();
                 
-                // Simulate AI thinking time (2-4 seconds)
                 const thinkingTime = 2000 + Math.random() * 2000;
                 currentResponseTimeout = setTimeout(() => {
                     hideLoadingEffect();
                     
-                    // Generate a more realistic response based on user input
                     const responses = [
                         `I understand you're asking about "${text}". Let me help you with that. This is a simulated response that demonstrates the typing effect. The bot appears to be thinking and then types out its response character by character, making the interaction feel more natural and engaging.`,
                         `Great question! "${text}" is an interesting topic. Here's what I can tell you about it: The typing effect creates a more human-like conversation experience. Each character appears individually, simulating how a real person might type their response.`,
@@ -323,7 +368,6 @@ $(function() {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
                 
-                // Check if we're in typing state
                 const sendIcon = chatSend.querySelector('svg');
                 const isPauseIcon = sendIcon.innerHTML.includes('polyline');
                 
@@ -332,7 +376,7 @@ $(function() {
                 }
             }
         });
-        // Auto-resize textarea
+        
         chatInput.addEventListener('input', function() {
             chatInput.style.height = '48px';
             chatInput.style.height = (chatInput.scrollHeight) + 'px';
@@ -340,19 +384,9 @@ $(function() {
         
         chatClose.onclick = closeChat;
         
-        // Keyboard shortcut: Ctrl+Shift+C to open chat
-        document.addEventListener('keydown', function(e) {
-            if (e.ctrlKey && e.shiftKey && e.code === 'KeyC') {
-                openChat();
-            }
-        });
-        
-        // --- Drag and Drop Logic ---
         let isDragging = false;
         let dragOffsetX = 0;
         let dragOffsetY = 0;
-        let startLeft = 0;
-        let startTop = 0;
         chatHeader.addEventListener('mousedown', function(e) {
             isDragging = true;
             // Get current position
@@ -383,29 +417,23 @@ $(function() {
             isDragging = false;
             document.body.style.userSelect = '';
         });
-        // --- End Drag and Drop Logic ---
         
-        // Wait for Node-RED to fully load before showing StringPilot
         let flowsLoaded = false;
         let completeLoadFinished = false;
         
-        // Listen for flows to be loaded
         RED.events.on("flows:loaded", function() {
             flowsLoaded = true;
             checkReadyToShow();
         });
         
-        // Listen for complete load to finish
         RED.events.on("completeLoad", function() {
             completeLoadFinished = true;
             checkReadyToShow();
         });
         
-        // Alternative: Listen for the loader to end (when loading is complete)
         const originalLoaderEnd = RED.loader.end;
         RED.loader.end = function() {
-            originalLoaderEnd.call(this);
-            // Add a small delay to ensure everything is fully rendered
+            originalLoaderEnd.call(this); 
             setTimeout(() => {
                 completeLoadFinished = true;
                 checkReadyToShow();
@@ -413,16 +441,13 @@ $(function() {
         };
         
         function checkReadyToShow() {
-            // Show StringPilot when both flows are loaded and complete load is finished
             if (flowsLoaded && completeLoadFinished) {
-                // Add a small delay to ensure smooth user experience
                 setTimeout(() => {
                     openChat();
                 }, 1000);
             }
         }
         
-        // Fallback: If events don't fire as expected, show after a reasonable timeout
         setTimeout(() => {
             if (!flowsLoaded || !completeLoadFinished) {
                 console.log("StringPilot: Fallback timeout reached, showing chat widget");
