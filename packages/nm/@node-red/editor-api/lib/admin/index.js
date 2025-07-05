@@ -23,6 +23,8 @@ var info = require("./settings");
 var plugins = require("./plugins");
 var diagnostics = require("./diagnostics");
 
+const FLOWS_BASE_PATH = process.env.NR_FLOWS_BASE_PATH || "/flows";
+
 var apiUtil = require("../util");
 
 module.exports = {
@@ -40,13 +42,13 @@ module.exports = {
         const adminApp = apiUtil.createExpressApp(settings)
 
         // Flows
-        adminApp.get("/flows",needsPermission("flows.read"),flows.get,apiUtil.errorHandler);
-        adminApp.post("/flows",needsPermission("flows.write"),flows.post,apiUtil.errorHandler);
+        adminApp.get(FLOWS_BASE_PATH, needsPermission("flows.read"), flows.get, apiUtil.errorHandler);
+        adminApp.post(FLOWS_BASE_PATH, needsPermission("flows.write"), flows.post, apiUtil.errorHandler);
 
         // Flows/state
-        adminApp.get("/flows/state", needsPermission("flows.read"), flows.getState, apiUtil.errorHandler);
+        adminApp.get(`${FLOWS_BASE_PATH}/state`, needsPermission("flows.read"), flows.getState, apiUtil.errorHandler);
         if (settings.runtimeState && settings.runtimeState.enabled === true) {
-            adminApp.post("/flows/state", needsPermission("flows.write"), flows.postState, apiUtil.errorHandler);
+            adminApp.post(`${FLOWS_BASE_PATH}/state`, needsPermission("flows.write"), flows.postState, apiUtil.errorHandler);
         }
 
         // Flow
